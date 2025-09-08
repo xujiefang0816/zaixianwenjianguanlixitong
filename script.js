@@ -67,6 +67,17 @@ function initSystem() {
     
     // 初始化文件类型、部门、计量单位等下拉列表
     loadSystemSettings();
+    
+    // 绑定刷新按钮事件
+    document.getElementById('refresh-file-info-btn')?.addEventListener('click', function() {
+        loadFilesData();
+        showToast('文件信息已刷新', 'success');
+    });
+    
+    document.getElementById('refresh-file-process-btn')?.addEventListener('click', function() {
+        loadFilesData();
+        showToast('文件信息已刷新', 'success');
+    });
 }
 
 // 获取DOM元素引用

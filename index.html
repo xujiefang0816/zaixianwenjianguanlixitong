@@ -314,12 +314,18 @@
 
                 <!-- 文件信息页面 -->
                 <div id="file-info-page" class="page-content hidden">
-                    <div class="mb-6">
-                        <h2 class="text-xl font-bold text-dark flex items-center">
-                            <i class="fa fa-list-alt mr-2 text-primary"></i>
-                            文件信息
-                        </h2>
-                        <p class="text-info mt-1">查看已提交的文件信息</p>
+                    <div class="mb-6 flex justify-between items-start">
+                        <div>
+                            <h2 class="text-xl font-bold text-dark flex items-center">
+                                <i class="fa fa-list-alt mr-2 text-primary"></i>
+                                文件信息
+                            </h2>
+                            <p class="text-info mt-1">查看已提交的文件信息</p>
+                        </div>
+                        <button id="refresh-file-info-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-custom btn-hover flex items-center">
+                            <i class="fa fa-refresh mr-2"></i>
+                            刷新
+                        </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -360,10 +366,16 @@
                             </h2>
                             <p class="text-info mt-1">编辑和管理文件信息</p>
                         </div>
-                        <button id="export-excel-btn" class="px-6 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-custom btn-hover flex items-center">
-                            <i class="fa fa-download mr-2"></i>
-                            导出为Excel
-                        </button>
+                        <div class="flex items-center gap-3">
+                            <button id="refresh-file-process-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-custom btn-hover flex items-center">
+                                <i class="fa fa-refresh mr-2"></i>
+                                刷新
+                            </button>
+                            <button id="export-excel-btn" class="px-6 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-custom btn-hover flex items-center">
+                                <i class="fa fa-download mr-2"></i>
+                                导出为Excel
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- 批量操作按钮 -->
