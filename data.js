@@ -192,6 +192,10 @@ class DataManager {
         };
         this.files.unshift(newFile); // 添加到数组开头
         this.saveFiles();
+        
+        // 触发数据更新事件
+        this.notifyDataChange();
+        
         return newFile;
     }
 
@@ -211,6 +215,10 @@ class DataManager {
         if (index !== -1) {
             this.files[index] = { ...this.files[index], ...updatedData };
             this.saveFiles();
+            
+            // 触发数据更新事件
+            this.notifyDataChange();
+            
             return this.files[index];
         }
         return null;
@@ -222,6 +230,10 @@ class DataManager {
         if (index !== -1) {
             this.files.splice(index, 1);
             this.saveFiles();
+            
+            // 触发数据更新事件
+            this.notifyDataChange();
+            
             return true;
         }
         return false;
@@ -231,6 +243,10 @@ class DataManager {
     batchDeleteFiles(ids) {
         this.files = this.files.filter(file => !ids.includes(file.id));
         this.saveFiles();
+        
+        // 触发数据更新事件
+        this.notifyDataChange();
+        
         return true;
     }
 
@@ -247,6 +263,10 @@ class DataManager {
             }
         });
         this.saveFiles();
+        
+        // 触发数据更新事件
+        this.notifyDataChange();
+        
         return true;
     }
 
@@ -382,6 +402,20 @@ class DataManager {
         return false;
     }
 
+    // 通知数据变更
+    notifyDataChange() {
+        // 创建自定义事件通知UI更新
+        const event = new CustomEvent('fileDataChanged');
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(event);
+        }
+        
+        // 复制一份数据到sessionStorage，触发storage事件（用于跨标签页同步）
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('fileSystemDataSync', Date.now().toString());
+        }
+    }
+    
     // 导出数据为Excel格式
     exportToExcel() {
         const files = this.getAllFiles();

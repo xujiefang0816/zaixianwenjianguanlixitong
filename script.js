@@ -4,7 +4,36 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 初始化系统
     initSystem();
+    
+    // 添加localStorage变化监听，实现跨标签页数据同步
+    window.addEventListener('storage', handleStorageChange);
+    
+    // 添加文件数据变化监听，实现同标签页数据即时刷新
+    window.addEventListener('fileDataChanged', handleFileDataChange);
 });
+
+// 处理localStorage变化事件
+function handleStorageChange(event) {
+    // 只有当文件数据发生变化或同步标记发生变化且当前在文件相关页面时才刷新
+    if ((event.key === 'fileSystemFiles' || event.key === 'fileSystemDataSync') && event.newValue !== event.oldValue) {
+        const currentPage = document.querySelector('.menu-item.bg-primary\/10').getAttribute('data-page');
+        if (currentPage === 'file-info' || currentPage === 'file-process') {
+            // 重新初始化数据管理器
+            dataManager.initializeData();
+            // 重新加载文件数据
+            loadFilesData();
+        }
+    }
+}
+
+// 处理文件数据变化事件（同标签页）
+function handleFileDataChange() {
+    const currentPage = document.querySelector('.menu-item.bg-primary\/10').getAttribute('data-page');
+    if (currentPage === 'file-info' || currentPage === 'file-process') {
+        // 重新加载文件数据
+        loadFilesData();
+    }
+}
 
 // 系统初始化
 function initSystem() {
@@ -375,14 +404,38 @@ function handleFileTypeChange() {
         (cb.value === '付款申请单' || cb.value === '付款单+用印审批（仅限验收报告）') && cb.checked
     );
     
-    // 更新文件内容标签和占位符
-    const fileContentLabel = fileContentInput.parentElement.querySelector('label');
+    // 显示或隐藏普通内容区域和摘要区域
+    const normalContentContainer = document.getElementById('normal-content-container');
+    const summaryContainer = document.getElementById('summary-container');
+    
     if (hasPaymentType) {
-        fileContentLabel.textContent = '摘要';
-        fileContentInput.placeholder = '支付/报销+支付内容+（期间+付款单位简称）';
+        normalContentContainer.classList.add('hidden');
+        summaryContainer.classList.remove('hidden');
     } else {
-        fileContentLabel.textContent = '文件内容';
-        fileContentInput.placeholder = '请输入文件内容';
+        normalContentContainer.classList.remove('hidden');
+        summaryContainer.classList.add('hidden');
+    }
+}
+
+// 处理期间类型选择变化
+function handlePeriodTypeChange() {
+    const singlePeriodContainer = document.getElementById('single-period-container');
+    const rangePeriodContainer = document.getElementById('range-period-container');
+    const singlePeriodRadio = document.querySelector('input[name="periodType"][value="single"]');
+    const rangePeriodRadio = document.querySelector('input[name="periodType"][value="range"]');
+    
+    if (singlePeriodRadio.checked) {
+        singlePeriodContainer.classList.remove('hidden');
+        rangePeriodContainer.classList.add('hidden');
+        document.getElementById('single-period').setAttribute('required', 'required');
+        document.getElementById('start-period').removeAttribute('required');
+        document.getElementById('end-period').removeAttribute('required');
+    } else {
+        singlePeriodContainer.classList.add('hidden');
+        rangePeriodContainer.classList.remove('hidden');
+        document.getElementById('single-period').removeAttribute('required');
+        document.getElementById('start-period').setAttribute('required', 'required');
+        document.getElementById('end-period').setAttribute('required', 'required');
     }
 }
 
@@ -550,6 +603,14 @@ function loadSettingsList(container, items, type) {
 
 // 初始化文件登记表单
 function initFileRegisterForm() {
+    // 设置默认日期
+    document.getElementById('register-date').value = new Date().toISOString().split('T')[0];
+    
+    // 期间类型选择事件监听
+    document.querySelectorAll('.period-type-radio').forEach(radio => {
+        radio.addEventListener('change', handlePeriodTypeChange);
+    });
+    
     // 表单提交事件
     fileRegisterForm.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -559,13 +620,64 @@ function initFileRegisterForm() {
         const selectedFileTypes = Array.from(document.querySelectorAll('.file-type-checkbox:checked')).map(cb => cb.value);
         const department = departmentSelect.value;
         const applicant = applicantInput.value.trim();
-        const content = fileContentInput.value.trim();
         const unit = unitSelect.value;
         const quantity = quantityInput.value ? parseFloat(quantityInput.value) : 0;
         const amount = amountInput.value ? parseFloat(amountInput.value) : 0;
         
-        // 验证必填项
-        if (!date || selectedFileTypes.length === 0 || !department || !applicant || !content || !unit) {
+        // 检查是否选择了付款相关文件类型
+        let content = '';
+        const hasPaymentType = selectedFileTypes.some(type => 
+            type === '付款申请单' || type === '付款单+用印审批（仅限验收报告）'
+        );
+        
+        if (hasPaymentType) {
+            // 合并摘要内容
+            const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value;
+            const paymentContent = document.getElementById('payment-content').value.trim();
+            const periodType = document.querySelector('input[name="periodType"]:checked')?.value;
+            const paymentCompany = document.getElementById('payment-company').value.trim();
+            
+            // 验证摘要必填项
+            if (!paymentType || !paymentContent || !paymentCompany) {
+                showToast('请填写所有必填的摘要信息', 'error');
+                return;
+            }
+            
+            // 构建摘要内容
+            content = `${paymentType}${paymentContent}`;
+            
+            // 添加期间信息
+            if (periodType === 'single') {
+                const singlePeriod = document.getElementById('single-period').value;
+                if (singlePeriod) {
+                    const [year, month] = singlePeriod.split('-');
+                    content += ` ${year}年${month}月`;
+                }
+            } else {
+                const startPeriod = document.getElementById('start-period').value;
+                const endPeriod = document.getElementById('end-period').value;
+                if (startPeriod && endPeriod) {
+                    const [startYear, startMonth] = startPeriod.split('-');
+                    const [endYear, endMonth] = endPeriod.split('-');
+                    content += ` ${startYear}年${startMonth}月-${endYear}年${endMonth}月`;
+                }
+            }
+            
+            // 添加付款单位
+            content += ` ${paymentCompany}`;
+        } else {
+            // 使用普通文件内容
+            content = fileContentInput.value.trim();
+            
+            // 验证文件内容
+            if (!content) {
+                showToast('请输入文件内容', 'error');
+                return;
+            }
+        }
+        
+        // 验证其他必填项
+        if (!date || selectedFileTypes.length === 0 || !department || !applicant || !unit) {
             showToast('请填写所有必填项', 'error');
             return;
         }
@@ -620,10 +732,21 @@ function initFileRegisterForm() {
         otherFileTypeContainer.classList.add('hidden');
         otherUnitContainer.classList.add('hidden');
         
-        // 重置文件内容标签和占位符
-        const fileContentLabel = fileContentInput.parentElement.querySelector('label');
-        fileContentLabel.textContent = '文件内容';
-        fileContentInput.placeholder = '请输入文件内容';
+        // 重置摘要相关字段
+        document.querySelector('input[name="paymentType"][value="支付"]').checked = true;
+        document.querySelector('input[name="periodType"][value="single"]').checked = true;
+        
+        // 重置期间显示
+        const singlePeriodContainer = document.getElementById('single-period-container');
+        const rangePeriodContainer = document.getElementById('range-period-container');
+        singlePeriodContainer.classList.remove('hidden');
+        rangePeriodContainer.classList.add('hidden');
+        
+        // 重置内容区域显示
+        const normalContentContainer = document.getElementById('normal-content-container');
+        const summaryContainer = document.getElementById('summary-container');
+        normalContentContainer.classList.remove('hidden');
+        summaryContainer.classList.add('hidden');
     });
 }
 
