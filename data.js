@@ -213,6 +213,11 @@ class DataManager {
     updateFile(id, updatedData) {
         const index = this.files.findIndex(file => file.id === id);
         if (index !== -1) {
+            // 如果更新了状态，添加状态设置时间
+            if (updatedData.status && updatedData.status !== this.files[index].status) {
+                updatedData.statusUpdateTime = new Date().toISOString();
+            }
+            
             this.files[index] = { ...this.files[index], ...updatedData };
             this.saveFiles();
             
@@ -252,9 +257,13 @@ class DataManager {
 
     // 批量更新文件状态
     batchUpdateStatus(ids, status) {
+        const currentTime = new Date().toISOString();
+        
         this.files.forEach(file => {
             if (ids.includes(file.id)) {
                 file.status = status;
+                file.statusUpdateTime = currentTime; // 添加状态设置时间
+                
                 if (status === '完毕') {
                     file.endDate = new Date().toISOString().split('T')[0];
                 } else if (file.status === '完毕') {

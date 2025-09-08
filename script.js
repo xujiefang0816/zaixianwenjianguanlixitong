@@ -714,7 +714,8 @@ function initFileRegisterForm() {
             content,
             unit: finalUnit,
             quantity,
-            amount
+            amount,
+            fileNumber: '' // 添加fileNumber字段，确保与文件模型一致
         };
         
         // 添加文件
@@ -772,6 +773,19 @@ function loadFilesData() {
     updateFileProcessTable(files);
 }
 
+// 格式化时间为年月日时分秒
+function formatDateTime(dateTimeString) {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 // 更新文件信息表格
 function updateFileInfoTable(files) {
     // 清空表格内容
@@ -798,6 +812,9 @@ function updateFileInfoTable(files) {
         // 格式化日期
         const endDate = file.endDate ? file.endDate : '';
         
+        // 格式化送签状态设置时间
+        const statusUpdateTime = formatDateTime(file.statusUpdateTime);
+        
         // 根据送签状态设置不同颜色
         const getStatusColorClass = (status) => {
             if (status === '完毕') return 'text-success';
@@ -818,6 +835,7 @@ function updateFileInfoTable(files) {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">${formattedAmount}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">${endDate}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm ${getStatusColorClass(file.status)}">${file.status}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">${statusUpdateTime}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">${file.returnReason || ''}</td>
         `;
         
